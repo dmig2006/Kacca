@@ -1,0 +1,56 @@
+#!/bin/bash
+
+#echo 'char Revision = "'expr substr $(svn info | grep 'Revision: ') 10  '";' >Revision.cpp
+#stringZ= $(svn info | grep 'Revision: ')
+#echo 'int revision='${stringZ:10}';' >Revision.cpp
+
+REV=1167
+
+if [ -x /usr/bin/hr-msg ]; then
+	msg=/usr/bin/hr-msg
+else
+	msg=echo
+fi
+
+${msg}
+${msg}
+${msg} " Start building ${REV} revision " "01;32" "01;37"
+
+echo "int revision=${REV};" >Revision.cpp
+
+make -s
+status=$?
+
+if [ $status -eq 0 ]; then
+    ${msg} " Build successful "
+	${msg}
+	${msg}
+	if [ -f ./Kacca ]; then
+		hr-msg " Make distr/Kacca.tgz "
+		sudo chown root:root ./Kacca
+		sudo chmod 4755 ./Kacca
+		if [ ! -d ./distr ]; then
+			mkdir ./distr
+		fi
+		sudo tar -czvf ./distr/Kacca.tgz Kacca
+		cp ./distr/Kacca.tgz ./distr/Kacca.${REV}.tgz
+		hr-msg " scp ./distr/Kacca.tgz to kassir@kassat:/distr/ "
+		scp ./distr/Kacca.tgz kassir@kassat:/distr/
+		sudo cp -f ./distr/Kacca.tgz /Kacca/Kacca.tgz
+		cp -f ./distr/Kacca.tgz ./distr/Kacca.${REV}.tgz
+		sudo make --makefile=./debian/rules binary
+	fi
+	${msg} "" "1;37" "1;32"
+	${msg} "" "1;37" "1;32"
+    ${msg} " Build rev.${REV} finished $(date '+%d.%m.%Y %H:%M:%S') " "1;37" "1;32"
+	${msg} "" "1;37" "1;32"
+		md5sum ./Kacca
+		md5sum ./distr/Kacca.tgz
+		md5sum ./distr/Kacca.${REV}.tgz
+	${msg} "" "1;37" "1;32"
+else
+	${msg} "" "1;37" "1;33"
+    ${msg} " Build rev.${REV} failed !!! " "01;31" "01;33"
+	${msg} "" "1;37" "1;33"
+fi
+
